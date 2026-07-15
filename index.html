@@ -716,10 +716,10 @@ tr:hover td { background: var(--surface-2); }
         <div class="page-head">
           <p class="eyebrow">Panel de administración</p>
           <h3>Resultados de evaluaciones LORI</h3>
-          <p>Visualiza, analiza y exporta los datos de todas las evaluaciones registradas.</p>
+          <p>Visualiza, filtra, analiza y exporta los datos de todas las evaluaciones registradas.</p>
         </div>
 
-        <!-- Stats -->
+        <!-- KPIs -->
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-label">Total evaluaciones</div>
@@ -738,7 +738,7 @@ tr:hover td { background: var(--surface-2); }
           </div>
           <div class="stat-card">
             <div class="stat-label">Mejor categoría</div>
-            <div class="stat-value" id="st-mejor" style="font-size:14px; margin-top:4px;">—</div>
+            <div class="stat-value" id="st-mejor" style="font-size:13px; margin-top:6px; line-height:1.3;">—</div>
             <div class="stat-sub">mayor puntaje promedio</div>
           </div>
         </div>
@@ -755,22 +755,70 @@ tr:hover td { background: var(--surface-2); }
           </div>
         </div>
 
-        <!-- Toolbar -->
-        <div class="card" style="padding:14px 18px;">
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-            <div style="font-size:13px; font-weight:700; color:var(--ink);">
-              Registros de evaluación
-            </div>
+        <!-- Toolbar + Filtros -->
+        <div class="card" style="padding:16px 18px; margin-bottom:14px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+            <div style="font-size:13px; font-weight:700; color:var(--ink);">Filtros y registros</div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <button class="btn secondary" onclick="loadAdminData()">🔄 Actualizar</button>
               <button class="btn orange" onclick="exportExcel()">📥 Exportar Excel</button>
               <button class="btn danger" onclick="closeAdmin()">✕ Cerrar panel</button>
             </div>
           </div>
+          <!-- Filtros -->
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div style="flex:1; min-width:160px;">
+              <label style="font-size:10.5px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px;">Evaluador</label>
+              <select id="filter-evaluador" onchange="applyFilters()"
+                style="width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface-2); color:var(--ink);">
+                <option value="">Todos los evaluadores</option>
+              </select>
+            </div>
+            <div style="flex:1; min-width:140px;">
+              <label style="font-size:10.5px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px;">Grado</label>
+              <select id="filter-grado" onchange="applyFilters()"
+                style="width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface-2); color:var(--ink);">
+                <option value="">Todos los grados</option>
+                <option>Tercero (3°)</option>
+                <option>Cuarto (4°)</option>
+                <option>Quinto (5°)</option>
+              </select>
+            </div>
+            <div style="flex:1; min-width:160px;">
+              <label style="font-size:10.5px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px;">Fecha desde</label>
+              <input type="date" id="filter-fecha-desde" onchange="applyFilters()"
+                style="width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface-2); color:var(--ink);" />
+            </div>
+            <div style="flex:1; min-width:160px;">
+              <label style="font-size:10.5px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px;">Fecha hasta</label>
+              <input type="date" id="filter-fecha-hasta" onchange="applyFilters()"
+                style="width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface-2); color:var(--ink);" />
+            </div>
+            <div style="flex:1; min-width:200px;">
+              <label style="font-size:10.5px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px;">RED evaluado</label>
+              <input type="text" id="filter-red" oninput="applyFilters()" placeholder="Buscar RED…"
+                style="width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface-2); color:var(--ink);" />
+            </div>
+            <div style="align-self:flex-end; padding-bottom:1px;">
+              <button class="btn secondary" onclick="clearFilters()" style="white-space:nowrap;">✕ Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector de sesión -->
+        <div class="card" style="padding:14px 18px; margin-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <label style="font-size:11px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; flex-shrink:0;">Ver detalle de sesión</label>
+            <select id="filter-sesion" onchange="onSessionChange()"
+              style="flex:1; min-width:260px; padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface-2); color:var(--ink);">
+              <option value="">Selecciona una sesión para ver su detalle…</option>
+            </select>
+            <button class="btn secondary" id="btn-edit-session" style="display:none; white-space:nowrap;" onclick="openEdit(_currentSessionKey)">✏️ Editar sesión</button>
+          </div>
         </div>
 
         <!-- Table -->
-        <div class="card" style="padding:0; overflow:hidden;">
+        <div class="card" style="padding:0; overflow:hidden; margin-bottom:16px;">
           <div class="table-wrap">
             <table>
               <thead>
@@ -781,7 +829,7 @@ tr:hover td { background: var(--surface-2); }
                   <th>RED evaluado</th>
                   <th>Tiempo uso</th>
                   <th>Promedio</th>
-                  <th>Acción</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="admin-table-body">
@@ -790,6 +838,52 @@ tr:hover td { background: var(--surface-2); }
             </table>
           </div>
         </div>
+
+        <!-- Detalle / Consolidado por sesión o global -->
+        <div id="detail-section" style="display:none;">
+          <div class="card">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-size:10.5px; font-weight:700; color:var(--orange-deep); text-transform:uppercase; letter-spacing:.08em; font-family:var(--mono); margin-bottom:4px;">
+                  Detalle por categoría
+                </div>
+                <div style="font-size:14px; font-weight:700; color:var(--ink);" id="detail-title">—</div>
+              </div>
+              <!-- Selector categoría (solo en vista global) -->
+              <div id="cat-selector-wrap" style="display:none;">
+                <label style="font-size:11px; font-weight:700; color:var(--ink-faint); display:block; margin-bottom:4px;">Distribución por categoría</label>
+                <select id="cat-selector" onchange="renderCatChart()"
+                  style="padding:7px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface-2);">
+                </select>
+              </div>
+            </div>
+
+            <!-- Vista global: barras de promedios + gráfica por categoría -->
+            <div id="detail-global" style="display:none;">
+              <p style="font-size:12px; color:var(--ink-faint); margin:0 0 16px;">
+                Consolidado general de <strong id="global-count">0</strong> evaluación(es) — todos los evaluadores incluidos en el filtro actual.
+              </p>
+              <!-- Barras de promedio por categoría -->
+              <div id="global-bars" style="margin-bottom:22px;"></div>
+              <!-- Gráfica de distribución de una categoría -->
+              <div class="chart-card" id="cat-chart-wrap" style="display:none;">
+                <canvas id="chart-cat-detail" height="180"></canvas>
+              </div>
+            </div>
+
+            <!-- Vista sesión individual: tabla de ítems + observaciones -->
+            <div id="detail-sesion" style="display:none;">
+              <!-- Info básica -->
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:18px;" id="sesion-meta"></div>
+              <!-- Tabla de valoraciones por categoría e ítem -->
+              <h4 style="font-size:13px; font-weight:700; color:var(--ink); margin:0 0 10px;">Valoraciones por categoría</h4>
+              <div id="sesion-cats"></div>
+              <!-- Observaciones -->
+              <div id="sesion-obs" style="margin-top:18px;"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div><!-- /content -->
@@ -1331,11 +1425,9 @@ function openAdminLogin() {
   document.getElementById('adminLoginOverlay').classList.add('show');
   setTimeout(() => document.getElementById('adminPassInput').focus(), 100);
 }
-
 function closeAdminLogin() {
   document.getElementById('adminLoginOverlay').classList.remove('show');
 }
-
 function attemptAdminLogin() {
   const pass = document.getElementById('adminPassInput').value;
   if (pass === ADMIN_PASSWORD) {
@@ -1347,7 +1439,6 @@ function attemptAdminLogin() {
     document.getElementById('adminPassInput').value = '';
   }
 }
-
 function openAdmin() {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('admin-panel').classList.add('active');
@@ -1356,7 +1447,6 @@ function openAdmin() {
   document.getElementById('adminToggleBtn').textContent = '✕ Cerrar Admin';
   loadAdminData();
 }
-
 function closeAdmin() {
   _isAdmin = false;
   document.getElementById('admin-panel').classList.remove('active');
@@ -1367,143 +1457,350 @@ function closeAdmin() {
 }
 
 /* ============================================================
-   ADMIN — LOAD DATA
+   ADMIN — DATA & FILTERS
 ============================================================ */
+let _allData = [];
+let _filteredData = [];
+let _currentSessionKey = null;
+let _catChart = null;
+
 function loadAdminData() {
+  document.getElementById('admin-table-body').innerHTML =
+    '<tr><td colspan="7" style="text-align:center;color:var(--ink-faint);padding:24px;">Cargando…</td></tr>';
   dbRT.ref('evaluaciones-lori').once('value').then(snap => {
-    const raw = snap.val();
-    if (!raw) {
-      document.getElementById('admin-table-body').innerHTML =
-        '<tr><td colspan="7" style="text-align:center;color:var(--ink-faint);padding:24px;">Sin registros aún.</td></tr>';
-      updateStats([], []);
-      return;
-    }
-
-    const data = Object.entries(raw).map(([key, val]) => ({ key, ...val }));
-    data.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-    updateStats(data, raw);
-    renderAdminTable(data);
-    renderAdminCharts(data);
-  }).catch(err => {
-    showToast('❌ Error al cargar datos: ' + err.message, 'error');
-  });
+    const raw = snap.val() || {};
+    _allData = Object.entries(raw).map(([key, val]) => ({ key, ...val }));
+    _allData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    populateEvaluadorFilter();
+    applyFilters();
+  }).catch(err => showToast('❌ Error al cargar: ' + err.message, 'error'));
 }
 
-function updateStats(data, raw) {
-  document.getElementById('st-total').textContent = data.length;
+function populateEvaluadorFilter() {
+  const sel = document.getElementById('filter-evaluador');
+  const cur = sel.value;
+  const evals = [...new Set(_allData.map(d => d.evaluador || '—'))].sort();
+  sel.innerHTML = '<option value="">Todos los evaluadores</option>' +
+    evals.map(e => `<option value="${escHtml(e)}">${escHtml(e)}</option>`).join('');
+  sel.value = cur;
+}
 
+function clearFilters() {
+  ['filter-evaluador','filter-grado','filter-fecha-desde','filter-fecha-hasta','filter-red','filter-sesion']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  applyFilters();
+}
+
+function applyFilters() {
+  const fEval   = document.getElementById('filter-evaluador').value;
+  const fGrado  = document.getElementById('filter-grado').value;
+  const fDesde  = document.getElementById('filter-fecha-desde').value;
+  const fHasta  = document.getElementById('filter-fecha-hasta').value;
+  const fRed    = (document.getElementById('filter-red').value || '').toLowerCase().trim();
+
+  _filteredData = _allData.filter(d => {
+    if (fEval  && (d.evaluador || '—') !== fEval)  return false;
+    if (fGrado && (d.grado || '')       !== fGrado) return false;
+    if (fDesde && (d.fecha || '')       < fDesde)   return false;
+    if (fHasta && (d.fecha || '')       > fHasta)   return false;
+    if (fRed   && !(d.nombreRed || '').toLowerCase().includes(fRed)) return false;
+    return true;
+  });
+
+  updateKPIs(_filteredData);
+  renderMainCharts(_filteredData);
+  renderTable(_filteredData);
+  populateSessionFilter(_filteredData);
+  hideDetail();
+}
+
+function populateSessionFilter(data) {
+  const sel = document.getElementById('filter-sesion');
+  const globalOpt = data.length
+    ? `<option value="__global__">🌐 Consolidado general (${data.length} evaluación${data.length > 1 ? 'es' : ''})</option>`
+    : '';
+  sel.innerHTML = '<option value="">Selecciona una sesión para ver su detalle…</option>' +
+    globalOpt +
+    data.map(d =>
+      `<option value="${d.key}">${escHtml(d.evaluador || '—')} · ${escHtml(d.grado || '—')} · ${d.fecha || '—'}</option>`
+    ).join('');
+}
+
+function onSessionChange() {
+  const key = document.getElementById('filter-sesion').value;
+  const editBtn = document.getElementById('btn-edit-session');
+  if (!key) { hideDetail(); return; }
+
+  _currentSessionKey = key === '__global__' ? null : key;
+  editBtn.style.display = key !== '__global__' ? 'inline-flex' : 'none';
+
+  if (key === '__global__') {
+    showGlobalDetail(_filteredData);
+  } else {
+    const session = _allData.find(d => d.key === key);
+    if (session) showSessionDetail(session);
+  }
+}
+
+/* ============================================================
+   ADMIN — KPIs & CHARTS
+============================================================ */
+function updateKPIs(data) {
+  document.getElementById('st-total').textContent = data.length;
   if (!data.length) {
-    ['st-promedio','st-evaluadores','st-mejor'].forEach(id => {
-      document.getElementById(id).textContent = '—';
-    });
+    ['st-promedio','st-evaluadores','st-mejor'].forEach(id =>
+      document.getElementById(id).textContent = '—');
     return;
   }
+  const proms = data.map(d => d.promedioGeneral || 0);
+  document.getElementById('st-promedio').textContent =
+    (proms.reduce((a,b) => a+b, 0) / proms.length).toFixed(2);
+  document.getElementById('st-evaluadores').textContent =
+    new Set(data.map(d => d.evaluador)).size;
 
-  const promedios = data.map(d => d.promedioGeneral || 0);
-  const promGeneral = promedios.reduce((a, b) => a + b, 0) / promedios.length;
-  document.getElementById('st-promedio').textContent = promGeneral.toFixed(2);
-
-  const evaluadores = new Set(data.map(d => d.evaluador)).size;
-  document.getElementById('st-evaluadores').textContent = evaluadores;
-
-  // Best category
-  const catSums = {};
-  const catCounts = {};
+  // Best category across filtered data
+  const sums = {}, counts = {};
   data.forEach(d => {
     if (!d.catAverages) return;
     Object.entries(d.catAverages).forEach(([cat, val]) => {
-      catSums[cat]   = (catSums[cat]   || 0) + val;
-      catCounts[cat] = (catCounts[cat] || 0) + 1;
+      sums[cat]   = (sums[cat]   || 0) + val;
+      counts[cat] = (counts[cat] || 0) + 1;
     });
   });
-  let bestCat = '—', bestVal = 0;
-  Object.entries(catSums).forEach(([cat, sum]) => {
-    const avg = sum / (catCounts[cat] || 1);
-    if (avg > bestVal) { bestVal = avg; bestCat = cat; }
+  let bestId = null, bestVal = 0;
+  Object.entries(sums).forEach(([cat, sum]) => {
+    const avg = sum / (counts[cat] || 1);
+    if (avg > bestVal) { bestVal = avg; bestId = cat; }
   });
-  const catObj = CATEGORIAS.find(c => c.id === bestCat);
-  document.getElementById('st-mejor').textContent = catObj ? catObj.label.split(' ')[0] : '—';
+  const best = CATEGORIAS.find(c => c.id === bestId);
+  document.getElementById('st-mejor').textContent =
+    best ? `${best.icon} ${best.label}` : '—';
 }
 
-function renderAdminTable(data) {
-  function scoreChip(val) {
+function renderMainCharts(data) {
+  // Bar chart — promedio por categoría
+  const catAvgs = CATEGORIAS.map(cat => {
+    const vals = data.map(d => d.catAverages?.[cat.id] || 0).filter(v => v > 0);
+    return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+  });
+  if (_adminCharts.categorias) _adminCharts.categorias.destroy();
+  _adminCharts.categorias = new Chart(
+    document.getElementById('chart-categorias').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: CATEGORIAS.map(c => c.label.length > 14 ? c.label.slice(0,14)+'…' : c.label),
+      datasets: [{ label: 'Promedio', data: catAvgs.map(v => +v.toFixed(2)),
+        backgroundColor: '#5B6CD6', borderRadius: 6 }]
+    },
+    options: { responsive:true, plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,max:5,ticks:{stepSize:1}}} }
+  });
+
+  // Doughnut — distribución de promedios
+  const buckets = {'Excelente ≥4.5':0,'Bueno 3.5–4.4':0,'Aceptable 2.5–3.4':0,'Deficiente <2.5':0};
+  data.forEach(d => {
+    const p = d.promedioGeneral || 0;
+    if (p >= 4.5) buckets['Excelente ≥4.5']++;
+    else if (p >= 3.5) buckets['Bueno 3.5–4.4']++;
+    else if (p >= 2.5) buckets['Aceptable 2.5–3.4']++;
+    else buckets['Deficiente <2.5']++;
+  });
+  if (_adminCharts.distribucion) _adminCharts.distribucion.destroy();
+  _adminCharts.distribucion = new Chart(
+    document.getElementById('chart-distribucion').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(buckets),
+      datasets: [{ data: Object.values(buckets),
+        backgroundColor: ['#1FA060','#5B6CD6','#E0A012','#D6483A'],
+        borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: { responsive:true, plugins:{legend:{position:'bottom'}} }
+  });
+}
+
+function renderTable(data) {
+  function chip(val) {
     const n = Number(val);
     const c = n >= 4.5 ? 5 : n >= 3.5 ? 4 : n >= 2.5 ? 3 : n >= 1.5 ? 2 : 1;
     return `<span class="score-chip c${c}">${n.toFixed(2)}</span>`;
   }
-  document.getElementById('admin-table-body').innerHTML = data.map(r => `
-    <tr>
-      <td>${escHtml(r.evaluador || '—')}</td>
-      <td>${r.fecha || '—'}</td>
-      <td>${escHtml(r.grado || '—')}</td>
-      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(r.nombreRed || '—')}</td>
-      <td>${escHtml(r.tiempoUso || '—')}</td>
-      <td>${scoreChip(r.promedioGeneral)}</td>
-      <td>
-        <div style="display:flex;gap:6px;">
-          <button class="btn secondary" style="padding:4px 10px;font-size:11px;"
-            onclick="openEdit('${r.key}')">✏️</button>
-          <button class="admin-del" onclick="deleteEntry('${r.key}')">Eliminar</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  document.getElementById('admin-table-body').innerHTML = data.length
+    ? data.map(r => `
+      <tr>
+        <td>${escHtml(r.evaluador||'—')}</td>
+        <td>${r.fecha||'—'}</td>
+        <td>${escHtml(r.grado||'—')}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.nombreRed||'')}">
+          ${escHtml(r.nombreRed||'—')}</td>
+        <td>${escHtml(r.tiempoUso||'—')}</td>
+        <td>${chip(r.promedioGeneral)}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button class="btn secondary" style="padding:4px 10px;font-size:11px;"
+              onclick="openEdit('${r.key}')">✏️</button>
+            <button class="admin-del" onclick="deleteEntry('${r.key}')">Eliminar</button>
+          </div>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--ink-faint);padding:32px;">Sin registros para los filtros seleccionados.</td></tr>';
 }
 
-function renderAdminCharts(data) {
-  // Category averages chart
-  const catAvgs = CATEGORIAS.map(cat => {
-    const vals = data.map(d => d.catAverages?.[cat.id] || 0).filter(v => v > 0);
-    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-  });
+/* ============================================================
+   ADMIN — DETAIL VIEWS
+============================================================ */
+function hideDetail() {
+  document.getElementById('detail-section').style.display = 'none';
+  document.getElementById('btn-edit-session').style.display = 'none';
+}
 
-  if (_adminCharts.categorias) _adminCharts.categorias.destroy();
-  const ctx1 = document.getElementById('chart-categorias').getContext('2d');
-  _adminCharts.categorias = new Chart(ctx1, {
+function showGlobalDetail(data) {
+  document.getElementById('detail-section').style.display = 'block';
+  document.getElementById('detail-title').textContent =
+    `🌐 Consolidado general — ${data.length} evaluación(es)`;
+  document.getElementById('global-count').textContent = data.length;
+  document.getElementById('detail-global').style.display = 'block';
+  document.getElementById('detail-sesion').style.display = 'none';
+  document.getElementById('cat-selector-wrap').style.display = 'block';
+
+  // Build category averages bars
+  const bars = CATEGORIAS.map(cat => {
+    const vals = data.map(d => d.catAverages?.[cat.id] || 0).filter(v => v > 0);
+    const avg  = vals.length ? vals.reduce((a,b) => a+b,0) / vals.length : 0;
+    const pct  = (avg / 5) * 100;
+    const col  = avg >= 4.5 ? '#1FA060' : avg >= 3.5 ? '#5B6CD6' : avg >= 2.5 ? '#E0A012' : '#D6483A';
+    return `
+      <div style="display:grid;grid-template-columns:200px 1fr 44px;align-items:center;gap:10px;margin-bottom:9px;">
+        <div style="font-size:12.5px;color:var(--ink);font-weight:600;">${cat.icon} ${cat.label}</div>
+        <div style="height:10px;background:var(--border);border-radius:6px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${col};border-radius:6px;transition:width .5s;"></div>
+        </div>
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ink-soft);text-align:right;">
+          ${avg.toFixed(2)}
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('global-bars').innerHTML = bars;
+
+  // Populate category selector
+  const sel = document.getElementById('cat-selector');
+  sel.innerHTML = CATEGORIAS.map((c,i) => `<option value="${i}">${c.icon} ${c.label}</option>`).join('');
+  renderCatChart();
+}
+
+function renderCatChart() {
+  const idx = parseInt(document.getElementById('cat-selector').value, 10);
+  const cat = CATEGORIAS[idx];
+  if (!cat) return;
+
+  // Count how many evaluaciones gave each value 1-5 for this category
+  const counts = [1,2,3,4,5].map(v =>
+    _filteredData.filter(d => {
+      const avg = d.catAverages?.[cat.id] || 0;
+      // Round to nearest integer to bucket
+      return Math.round(avg) === v;
+    }).length
+  );
+
+  document.getElementById('cat-chart-wrap').style.display = 'block';
+  if (_catChart) _catChart.destroy();
+  _catChart = new Chart(
+    document.getElementById('chart-cat-detail').getContext('2d'), {
     type: 'bar',
     data: {
-      labels: CATEGORIAS.map(c => c.label.length > 16 ? c.label.slice(0, 16) + '…' : c.label),
+      labels: ['1 · Muy deficiente','2 · Deficiente','3 · Aceptable','4 · Bueno','5 · Excelente'],
       datasets: [{
-        label: 'Promedio (1–5)',
-        data: catAvgs.map(v => Number(v.toFixed(2))),
-        backgroundColor: '#5B6CD6', borderRadius: 6
+        label: cat.label,
+        data: counts,
+        backgroundColor: ['#D6483A','#E0A012','#ca8a04','#5B6CD6','#1FA060'],
+        borderRadius: 6
       }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } } }
+      plugins: { legend:{display:false}, title:{display:true, text:`Distribución: ${cat.label}`} },
+      scales: { y:{beginAtZero:true, ticks:{precision:0}} }
     }
   });
+}
 
-  // Distribution doughnut
-  const buckets = { 'Excelente (≥4.5)': 0, 'Bueno (3.5–4.4)': 0, 'Aceptable (2.5–3.4)': 0, 'Deficiente (<2.5)': 0 };
-  data.forEach(d => {
-    const p = d.promedioGeneral || 0;
-    if (p >= 4.5) buckets['Excelente (≥4.5)']++;
-    else if (p >= 3.5) buckets['Bueno (3.5–4.4)']++;
-    else if (p >= 2.5) buckets['Aceptable (2.5–3.4)']++;
-    else buckets['Deficiente (<2.5)']++;
-  });
+function showSessionDetail(s) {
+  document.getElementById('detail-section').style.display = 'block';
+  document.getElementById('detail-title').textContent =
+    `${escHtml(s.evaluador||'—')} · ${escHtml(s.grado||'—')} · ${s.fecha||'—'}`;
+  document.getElementById('detail-global').style.display = 'none';
+  document.getElementById('detail-sesion').style.display = 'block';
+  document.getElementById('cat-selector-wrap').style.display = 'none';
 
-  if (_adminCharts.distribucion) _adminCharts.distribucion.destroy();
-  const ctx2 = document.getElementById('chart-distribucion').getContext('2d');
-  _adminCharts.distribucion = new Chart(ctx2, {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(buckets),
-      datasets: [{
-        data: Object.values(buckets),
-        backgroundColor: ['#1FA060', '#5B6CD6', '#E0A012', '#D6483A'],
-        borderWidth: 2, borderColor: '#fff'
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { position: 'bottom' } }
-    }
-  });
+  // Meta info
+  document.getElementById('sesion-meta').innerHTML = [
+    ['Evaluador', s.evaluador || '—'],
+    ['Fecha', s.fecha || '—'],
+    ['Grado', s.grado || '—'],
+    ['RED evaluado', s.nombreRed || '—'],
+    ['Tiempo de uso', s.tiempoUso || '—'],
+    ['Promedio general', s.promedioGeneral ? s.promedioGeneral.toFixed(2) + ' / 5.0' : '—'],
+  ].map(([l,v]) => `
+    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;">
+      <div style="font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">${l}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);">${escHtml(String(v))}</div>
+    </div>`).join('');
+
+  // Categories + items
+  const cats = CATEGORIAS.map(cat => {
+    const avg = s.catAverages?.[cat.id] ? Number(s.catAverages[cat.id].toFixed(2)) : '—';
+    const col = typeof avg === 'number'
+      ? (avg >= 4.5 ? '#1FA060' : avg >= 3.5 ? '#5B6CD6' : avg >= 2.5 ? '#E0A012' : '#D6483A')
+      : 'var(--ink-faint)';
+    const itemsHtml = cat.items.map((item, ii) => {
+      const vals = s.ratings?.[cat.id] || [];
+      const val  = vals[ii] || null;
+      const chip = val
+        ? `<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-family:var(--mono);font-size:11px;font-weight:700;
+            background:${val>=5?'var(--green-tint)':val>=4?'var(--indigo-tint)':val>=3?'#fef9c3':val>=2?'var(--amber-tint)':'var(--red-tint)'};
+            color:${val>=5?'var(--green)':val>=4?'var(--indigo-deep)':val>=3?'#92400e':val>=2?'var(--amber)':'var(--red)'};">${val} · ${ESCALA[val-1]}</span>`
+        : '<span style="color:var(--ink-faint);font-size:12px;">—</span>';
+      return `<tr>
+        <td style="font-size:12.5px;color:var(--ink-soft);padding:8px 10px;">${escHtml(item)}</td>
+        <td style="padding:8px 10px;">${chip}</td>
+      </tr>`;
+    }).join('');
+    return `
+      <div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+          background:var(--surface-2);border-bottom:1px solid var(--border);">
+          <div style="font-size:13px;font-weight:700;color:var(--ink);">${cat.icon} ${cat.label}</div>
+          <div style="font-family:var(--mono);font-size:13px;font-weight:800;color:${col};">
+            Promedio: ${avg}
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th style="text-align:left;font-size:10.5px;font-weight:700;color:var(--ink-faint);
+              text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--border);">Ítem</th>
+            <th style="font-size:10.5px;font-weight:700;color:var(--ink-faint);
+              text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;">Valoración</th>
+          </tr></thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+  document.getElementById('sesion-cats').innerHTML = cats;
+
+  // Observations
+  const obs = [
+    ['💪 Fortalezas', s.fortalezas],
+    ['🔧 Aspectos por mejorar', s.aspectosMejorar],
+    ['📌 Recomendaciones', s.recomendaciones],
+  ].filter(([,v]) => v && v.trim()).map(([l,v]) => `
+    <div style="margin-bottom:12px;padding:12px 14px;background:var(--surface-2);
+      border-radius:var(--radius-sm);border-left:3px solid var(--orange);">
+      <div style="font-size:11px;font-weight:700;color:var(--orange-deep);text-transform:uppercase;
+        letter-spacing:.06em;margin-bottom:5px;">${l}</div>
+      <div style="font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap;">${escHtml(v)}</div>
+    </div>`).join('');
+  document.getElementById('sesion-obs').innerHTML = obs ||
+    '<p style="color:var(--ink-faint);font-size:13px;">Sin observaciones registradas.</p>';
 }
 
 /* ============================================================
@@ -1516,22 +1813,20 @@ function openEdit(key) {
     _editKey = key;
     document.getElementById('edit-label').textContent =
       `${d.evaluador || ''} · ${d.grado || ''} · ${d.fecha || ''}`;
-    document.getElementById('edit-evaluador').value    = d.evaluador || '';
-    document.getElementById('edit-fecha').value        = d.fecha || '';
-    document.getElementById('edit-grado').value        = d.grado || '';
-    document.getElementById('edit-red').value          = d.nombreRed || '';
-    document.getElementById('edit-fortalezas').value   = d.fortalezas || '';
-    document.getElementById('edit-mejorar').value      = d.aspectosMejorar || '';
+    document.getElementById('edit-evaluador').value       = d.evaluador || '';
+    document.getElementById('edit-fecha').value           = d.fecha || '';
+    document.getElementById('edit-grado').value           = d.grado || '';
+    document.getElementById('edit-red').value             = d.nombreRed || '';
+    document.getElementById('edit-fortalezas').value      = d.fortalezas || '';
+    document.getElementById('edit-mejorar').value         = d.aspectosMejorar || '';
     document.getElementById('edit-recomendaciones').value = d.recomendaciones || '';
     document.getElementById('adminEditOverlay').classList.add('show');
   });
 }
-
 function closeEditOverlay() {
   document.getElementById('adminEditOverlay').classList.remove('show');
   _editKey = null;
 }
-
 function saveEdit() {
   if (!_editKey) return;
   const btn = document.getElementById('btn-save-edit');
@@ -1567,21 +1862,25 @@ function deleteEntry(key) {
 }
 
 /* ============================================================
-   EXPORT EXCEL
+   EXPORT EXCEL — múltiples hojas
 ============================================================ */
 function exportExcel() {
   dbRT.ref('evaluaciones-lori').once('value').then(snap => {
     const raw = snap.val();
     if (!raw) { showToast('Sin datos para exportar.', 'error'); return; }
 
-    const rows = Object.values(raw).map(r => {
+    const data = Object.values(raw);
+    const wb   = XLSX.utils.book_new();
+
+    // Hoja 1: Resumen general
+    const resumen = data.map(r => {
       const row = {
-        'Evaluador':          r.evaluador || '',
-        'Fecha':              r.fecha || '',
-        'Grado':              r.grado || '',
-        'RED evaluado':       r.nombreRed || '',
-        'Tiempo de uso':      r.tiempoUso || '',
-        'Promedio general':   r.promedioGeneral || 0,
+        'Evaluador': r.evaluador || '',
+        'Fecha': r.fecha || '',
+        'Grado': r.grado || '',
+        'RED evaluado': r.nombreRed || '',
+        'Tiempo de uso': r.tiempoUso || '',
+        'Promedio general': r.promedioGeneral || 0,
       };
       CATEGORIAS.forEach(cat => {
         row[cat.label] = r.catAverages?.[cat.id]
@@ -1592,12 +1891,42 @@ function exportExcel() {
       row['Recomendaciones']   = r.recomendaciones || '';
       return row;
     });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumen), 'Resumen general');
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Evaluaciones LORI');
+    // Hoja 2: Ítems detallados
+    const items = [];
+    data.forEach(r => {
+      CATEGORIAS.forEach(cat => {
+        (cat.items || []).forEach((item, ii) => {
+          items.push({
+            'Evaluador': r.evaluador || '',
+            'Fecha': r.fecha || '',
+            'Grado': r.grado || '',
+            'RED evaluado': r.nombreRed || '',
+            'Categoría': cat.label,
+            'Ítem': item,
+            'Valoración': r.ratings?.[cat.id]?.[ii] || '',
+          });
+        });
+      });
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(items), 'Ítems por categoría');
+
+    // Hoja 3: Consolidado por categoría
+    const consol = CATEGORIAS.map(cat => {
+      const vals = data.map(d => d.catAverages?.[cat.id] || 0).filter(v => v > 0);
+      return {
+        'Categoría': cat.label,
+        'Promedio': vals.length ? +(vals.reduce((a,b) => a+b,0)/vals.length).toFixed(2) : 0,
+        'Evaluaciones': vals.length,
+        'Mínimo': vals.length ? +Math.min(...vals).toFixed(2) : 0,
+        'Máximo': vals.length ? +Math.max(...vals).toFixed(2) : 0,
+      };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(consol), 'Consolidado categorías');
+
     XLSX.writeFile(wb, `evaluaciones-lori-${new Date().toISOString().slice(0,10)}.xlsx`);
-    showToast('📥 Excel exportado correctamente', 'success');
+    showToast('📥 Excel exportado (3 hojas)', 'success');
   });
 }
 
