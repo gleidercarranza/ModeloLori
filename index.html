@@ -549,7 +549,7 @@ table.admin-table tr:hover td{background:#f7f7fb;}
 
       <table class="admin-table">
         <thead><tr>
-          <th>Docente</th><th>Evaluador</th><th>RED</th><th>Grado</th><th>Fecha</th><th>Promedio</th><th>Nivel</th><th></th>
+          <th>Docente</th><th>RED</th><th>Grado</th><th>Fecha</th><th>Promedio</th><th>Nivel</th><th></th>
         </tr></thead>
         <tbody id="admin-table-body"></tbody>
       </table>
@@ -1036,7 +1036,6 @@ function renderAdminDashboard(data){
     return `
     <tr>
       <td>${escapeHtml(r.docente||'—')}</td>
-      <td>${escapeHtml(r.evaluador||'—')}</td>
       <td>${escapeHtml(r.nombreRed||'—')}</td>
       <td>${escapeHtml(r.grado||'—')}</td>
       <td>${escapeHtml(r.fecha||'—')}</td>
