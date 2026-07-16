@@ -528,7 +528,6 @@ table.admin-table tr:hover td{background:#f7f7fb;}
 
     <div class="admin-filters">
       <select id="admin-filter-docente" onchange="applyAdminFilters()"><option value="">Todos los docentes</option></select>
-      <select id="admin-filter-evaluador" onchange="applyAdminFilters()"><option value="">Todos los evaluadores</option></select>
       <select id="admin-filter-red" onchange="onEvalSelectionChange()"><option value="">Selecciona una evaluación…</option></select>
       <button class="admin-export" onclick="exportAdminCSV()">⬇ Exportar CSV</button>
     </div>
@@ -538,7 +537,7 @@ table.admin-table tr:hover td{background:#f7f7fb;}
     <div id="admin-content" style="display:none;">
       <div class="admin-kpis">
         <div class="admin-kpi"><div class="n" id="admin-kpi-total">0</div><div class="l">Evaluaciones registradas</div></div>
-        <div class="admin-kpi"><div class="n" id="admin-kpi-evaluadores">0</div><div class="l">Evaluadores distintos</div></div>
+        <div class="admin-kpi"><div class="n" id="admin-kpi-docentes">0</div><div class="l">Docentes distintos</div></div>
         <div class="admin-kpi"><div class="n" id="admin-kpi-reds">0</div><div class="l">RED distintos evaluados</div></div>
         <div class="admin-kpi"><div class="n" id="admin-kpi-prom">0.0</div><div class="l">Promedio general (1–5)</div></div>
       </div>
@@ -895,7 +894,6 @@ function loadAdminData(){
     .then(snap=>{
       const val = snap.val() || {};
       _adminAllData = Object.keys(val).map(key=>({key, ...val[key]}));
-      populateAdminEvaluadorFilter();
       populateAdminDocenteFilter();
       applyAdminFilters();
     })
@@ -905,27 +903,17 @@ function loadAdminData(){
     });
 }
 
-function populateAdminEvaluadorFilter(){
-  const sel = document.getElementById('admin-filter-evaluador');
-  const current = sel.value;
-  const evaluadores = [...new Set(_adminAllData.map(d=>d.evaluador || 'Sin especificar'))].sort();
-  sel.innerHTML = '<option value="">Todos los evaluadores</option>' + evaluadores.map(e=>`<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join('');
-  sel.value = current;
-}
-
 function populateAdminDocenteFilter(){
   const sel = document.getElementById('admin-filter-docente');
   const current = sel.value;
   const docentes = [...new Set(_adminAllData.map(d=>d.docente || 'Sin especificar'))].sort();
-  sel.innerHTML = '<option value="">Todos los docentes</option>' + docentes.map(dc=>`<option value="${escapeHtml(dc)}">${escapeHtml(dc)}</option>`).join('');
+  sel.innerHTML = '<option value="">Todos los docentes (consolidado general)</option>' + docentes.map(dc=>`<option value="${escapeHtml(dc)}">${escapeHtml(dc)}</option>`).join('');
   sel.value = current;
 }
 
 function applyAdminFilters(){
-  const evaluador = document.getElementById('admin-filter-evaluador').value;
   const docente = document.getElementById('admin-filter-docente').value;
   let filtered = _adminAllData.slice();
-  if(evaluador) filtered = filtered.filter(d=>(d.evaluador||'Sin especificar')===evaluador);
   if(docente) filtered = filtered.filter(d=>(d.docente||'Sin especificar')===docente);
   _adminFilteredData = filtered;
   renderAdminDashboard(filtered);
@@ -1014,12 +1002,12 @@ function renderAdminDashboard(data){
   empty.style.display='none'; content.style.display='block';
 
   const n = data.length;
-  const evaluadores = new Set(data.map(d=>d.evaluador||'Sin especificar'));
+  const docentes = new Set(data.map(d=>d.docente||'Sin especificar'));
   const reds = new Set(data.map(d=>d.nombreRed||'Sin especificar'));
   const promedioGeneral = data.reduce((a,d)=>a+(d.promedioGeneral||0),0)/n;
 
   document.getElementById('admin-kpi-total').textContent = n;
-  document.getElementById('admin-kpi-evaluadores').textContent = evaluadores.size;
+  document.getElementById('admin-kpi-docentes').textContent = docentes.size;
   document.getElementById('admin-kpi-reds').textContent = reds.size;
   document.getElementById('admin-kpi-prom').textContent = promedioGeneral.toFixed(2);
 
