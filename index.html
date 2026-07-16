@@ -924,17 +924,31 @@ function populateAdminSelect(filtered){
   const sel = document.getElementById('admin-filter-red');
   const current = sel.value;
   const sorted = filtered.slice().sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||''));
-  sel.innerHTML = '<option value="">Selecciona una evaluación…</option>' + sorted.map(d=>
+  const allOpt = filtered.length
+    ? `<option value="__ALL__">🌐 Ver consolidado de todas las evaluaciones (${filtered.length})</option>`
+    : '';
+  sel.innerHTML = '<option value="">Selecciona una evaluación…</option>' + allOpt + sorted.map(d=>
     `<option value="${d.key}">${escapeHtml(d.evaluador||'Sin especificar')} · ${escapeHtml(d.nombreRed||'RED')} · ${escapeHtml(d.fecha||'—')}</option>`
   ).join('');
-  if(sorted.some(d=>d.key===current)) sel.value = current;
+  if(current==='__ALL__' || sorted.some(d=>d.key===current)) sel.value = current;
   onEvalSelectionChange();
 }
 
 function onEvalSelectionChange(){
   const key = document.getElementById('admin-filter-red').value;
   const section = document.getElementById('admin-detalle-section');
+
   if(!key){ section.style.display='none'; _adminSelected=null; return; }
+
+  if(key==='__ALL__'){
+    _adminSelected = null;
+    section.style.display='block';
+    document.getElementById('admin-detalle-label').textContent =
+      `Consolidado general · ${_adminFilteredData.length} evaluación(es) incluida(s)`;
+    renderAdminDetalleConsolidado();
+    return;
+  }
+
   _adminSelected = _adminAllData.find(d=>d.key===key) || null;
   if(!_adminSelected){ section.style.display='none'; return; }
   section.style.display='block';
@@ -943,13 +957,11 @@ function onEvalSelectionChange(){
   renderAdminDetalle();
 }
 
-function renderAdminDetalle(){
-  const d = _adminSelected;
+function renderDetalleGrid(cats){
   _adminDetalleCharts.forEach(c=>{ if(c) c.destroy(); });
   _adminDetalleCharts = [];
 
   const grid = document.getElementById('admin-detalle-grid');
-  const cats = d.categorias || computeCategoryAveragesFromScores(d.scores||{});
   grid.innerHTML = cats.map((c,i)=>`
     <div class="admin-chart-card">
       <p style="font-size:12.5px; margin:0 0 10px; color:#333;">${escapeHtml(c.label)}</p>
@@ -970,6 +982,12 @@ function renderAdminDetalle(){
     });
     _adminDetalleCharts.push(chart);
   });
+}
+
+function renderAdminDetalle(){
+  const d = _adminSelected;
+  const cats = d.categorias || computeCategoryAveragesFromScores(d.scores||{});
+  renderDetalleGrid(cats);
 
   const obs = document.getElementById('admin-detalle-observaciones');
   const campo = (label, valor) => `
@@ -982,6 +1000,30 @@ function renderAdminDetalle(){
     campo('Fortalezas del RED', d.fortalezas) +
     campo('Aspectos por mejorar', d.aspectos) +
     campo('Recomendaciones', d.recomendaciones);
+}
+
+function renderAdminDetalleConsolidado(){
+  const data = _adminFilteredData;
+  const catSums = CATEGORIES.map(()=>({sum:0,count:0}));
+  data.forEach(d=>{
+    const cats = d.categorias || computeCategoryAveragesFromScores(d.scores||{});
+    cats.forEach((c,i)=>{
+      if(c.avg>0){ catSums[i].sum += c.avg; catSums[i].count += 1; }
+    });
+  });
+  const cats = CATEGORIES.map((cat,i)=>({
+    label: cat.label,
+    avg: catSums[i].count ? catSums[i].sum/catSums[i].count : 0
+  }));
+  renderDetalleGrid(cats);
+
+  const obs = document.getElementById('admin-detalle-observaciones');
+  obs.innerHTML = `
+    <p style="font-size:12.5px; color:#777; margin:0;">
+      Estas gráficas son el promedio consolidado por categoría de las <strong>${data.length}</strong> evaluación(es) filtradas.
+      Selecciona una evaluación puntual en el desplegable para ver sus observaciones (fortalezas, aspectos por mejorar y recomendaciones).
+    </p>
+  `;
 }
 
 function computeCategoryAveragesFromScores(scores){
