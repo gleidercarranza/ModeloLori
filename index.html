@@ -321,9 +321,6 @@ table.admin-table tr:hover td{background:#f7f7fb;}
       <button class="nav-item" data-panel="resultados">
         <span class="ic">📊</span><span>Resultados</span>
       </button>
-      <button class="nav-item" data-panel="consolidado">
-        <span class="ic">🌐</span><span>Consolidado General</span>
-      </button>
     </nav>
 
     <div class="sidebar-foot">
@@ -507,61 +504,6 @@ table.admin-table tr:hover td{background:#f7f7fb;}
         </div>
       </section>
 
-      <!-- ===================== PANEL 5: CONSOLIDADO GENERAL (TODOS LOS DOCENTES) ===================== -->
-      <section class="panel" id="panel-consolidado">
-        <div class="page-head">
-          <p class="eyebrow">Vista general · Todas las evaluaciones guardadas</p>
-          <h2>Consolidado general de todos los docentes</h2>
-          <p>Vista de solo lectura con el promedio y nivel de todas las evaluaciones LORI guardadas en la nube, filtrable por docente.</p>
-        </div>
-
-        <div class="card">
-          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-            <div class="field" style="flex:1; min-width:220px;">
-              <label>Filtrar por docente</label>
-              <select id="consol-filter-docente" onchange="applyConsolidadoFilters()"><option value="">Todos los docentes</option></select>
-            </div>
-            <button class="btn secondary" style="margin-top:20px;" onclick="loadConsolidadoGeneral()">🔄 Actualizar datos</button>
-          </div>
-        </div>
-
-        <div class="kpis">
-          <div class="kpi"><div class="num" id="consol-kpi-total">0</div><div class="lbl">Evaluaciones registradas</div></div>
-          <div class="kpi"><div class="num" id="consol-kpi-docentes">0</div><div class="lbl">Docentes evaluados</div></div>
-          <div class="kpi"><div class="num" id="consol-kpi-reds">0</div><div class="lbl">RED distintos</div></div>
-          <div class="kpi"><div class="num" id="consol-kpi-prom">0.0</div><div class="lbl">Promedio general (1–5)</div></div>
-        </div>
-
-        <div class="two-col">
-          <div class="card">
-            <h3>📊 Promedio por categoría (todas las evaluaciones)</h3>
-            <canvas id="consol-chart-categorias"></canvas>
-          </div>
-          <div class="card">
-            <h3>🥧 Distribución de niveles</h3>
-            <canvas id="consol-chart-nivel" height="220"></canvas>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>📋 Evaluaciones registradas</h3>
-          <div id="consol-empty" class="empty-state" style="display:none;">
-            <div class="ic">🗂️</div>
-            <p>Aún no hay evaluaciones guardadas en la nube.</p>
-          </div>
-          <table class="consol" id="consol-table" style="display:none;">
-            <thead><tr>
-              <th>Docente</th><th>RED</th><th>Evaluador</th><th>Grado</th><th>Fecha</th><th>Promedio</th><th>Nivel</th>
-            </tr></thead>
-            <tbody id="consol-table-body"></tbody>
-          </table>
-        </div>
-
-        <div class="btn-row">
-          <button class="btn secondary" onclick="goPanel('resultados')">← Resultados</button>
-        </div>
-      </section>
-
     </div>
   </div>
 </div>
@@ -585,6 +527,7 @@ table.admin-table tr:hover td{background:#f7f7fb;}
     <h2 style="margin-top:0;">Panel de administrador · Evaluaciones RED</h2>
 
     <div class="admin-filters">
+      <select id="admin-filter-docente" onchange="applyAdminFilters()"><option value="">Todos los docentes</option></select>
       <select id="admin-filter-evaluador" onchange="applyAdminFilters()"><option value="">Todos los evaluadores</option></select>
       <select id="admin-filter-red" onchange="onEvalSelectionChange()"><option value="">Selecciona una evaluación…</option></select>
       <button class="admin-export" onclick="exportAdminCSV()">⬇ Exportar CSV</button>
@@ -715,7 +658,6 @@ function goPanel(name){
   document.getElementById('panel-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.panel===name));
   if(name==='resultados') renderResultados();
-  if(name==='consolidado') loadConsolidadoGeneral();
   document.getElementById('sidebar').classList.remove('open');
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -911,120 +853,6 @@ function saveToCloud(){
 }
 
 /* ============================================================
-   CONSOLIDADO GENERAL (público, todos los docentes)
-============================================================ */
-let _consolAllData = [];
-let _consolCharts = {};
-
-function loadConsolidadoGeneral(){
-  dbRT.ref(DB_NODE).once('value')
-    .then(snap=>{
-      const val = snap.val() || {};
-      _consolAllData = Object.keys(val).map(key=>({key, ...val[key]}));
-      populateConsolidadoDocenteFilter();
-      applyConsolidadoFilters();
-    })
-    .catch(err=>{
-      console.error(err);
-      showToast('No se pudieron cargar los datos de la nube.');
-    });
-}
-
-function populateConsolidadoDocenteFilter(){
-  const sel = document.getElementById('consol-filter-docente');
-  const current = sel.value;
-  const docentes = [...new Set(_consolAllData.map(d=>d.docente || 'Sin especificar'))].sort();
-  sel.innerHTML = '<option value="">Todos los docentes</option>' + docentes.map(dc=>`<option value="${escapeHtml(dc)}">${escapeHtml(dc)}</option>`).join('');
-  sel.value = current;
-}
-
-function applyConsolidadoFilters(){
-  const docente = document.getElementById('consol-filter-docente').value;
-  let filtered = _consolAllData.slice();
-  if(docente) filtered = filtered.filter(d=>(d.docente||'Sin especificar')===docente);
-  renderConsolidadoGeneral(filtered);
-}
-
-function renderConsolidadoGeneral(data){
-  const empty = document.getElementById('consol-empty');
-  const table = document.getElementById('consol-table');
-
-  if(!data.length){
-    empty.style.display='block'; table.style.display='none';
-    document.getElementById('consol-kpi-total').textContent = '0';
-    document.getElementById('consol-kpi-docentes').textContent = '0';
-    document.getElementById('consol-kpi-reds').textContent = '0';
-    document.getElementById('consol-kpi-prom').textContent = '0.0';
-    if(_consolCharts.categorias) _consolCharts.categorias.destroy();
-    if(_consolCharts.nivel) _consolCharts.nivel.destroy();
-    return;
-  }
-  empty.style.display='none'; table.style.display='table';
-
-  const n = data.length;
-  const docentes = new Set(data.map(d=>d.docente||'Sin especificar'));
-  const reds = new Set(data.map(d=>d.nombreRed||'Sin especificar'));
-  const promedioGeneral = data.reduce((a,d)=>a+(d.promedioGeneral||0),0)/n;
-
-  document.getElementById('consol-kpi-total').textContent = n;
-  document.getElementById('consol-kpi-docentes').textContent = docentes.size;
-  document.getElementById('consol-kpi-reds').textContent = reds.size;
-  document.getElementById('consol-kpi-prom').textContent = promedioGeneral.toFixed(2);
-
-  const catSums = CATEGORIES.map(()=>({sum:0,count:0}));
-  data.forEach(d=>{
-    const cats = d.categorias || computeCategoryAveragesFromScores(d.scores||{});
-    cats.forEach((c,i)=>{
-      if(c.avg>0){ catSums[i].sum += c.avg; catSums[i].count += 1; }
-    });
-  });
-  const catLabels = CATEGORIES.map(c=>c.label);
-  const catAverages = catSums.map(s=> s.count ? s.sum/s.count : 0);
-
-  const nivelCount = {alto:0, medio:0, bajo:0};
-  data.forEach(d=>{
-    const lvl = levelFor(d.promedioGeneral||0);
-    nivelCount[lvl.cls]++;
-  });
-
-  if(_consolCharts.categorias) _consolCharts.categorias.destroy();
-  if(_consolCharts.nivel) _consolCharts.nivel.destroy();
-
-  const ctx1 = document.getElementById('consol-chart-categorias').getContext('2d');
-  _consolCharts.categorias = new Chart(ctx1, {
-    type:'bar',
-    data:{ labels:catLabels, datasets:[{ label:'Promedio', data:catAverages, backgroundColor:'#5B6CD6' }] },
-    options:{
-      responsive:true,
-      plugins:{ legend:{display:false} },
-      scales:{ y:{ min:0, max:5, ticks:{stepSize:1} }, x:{ ticks:{ autoSkip:false, font:{size:9} } } }
-    }
-  });
-
-  const ctx2 = document.getElementById('consol-chart-nivel').getContext('2d');
-  _consolCharts.nivel = new Chart(ctx2, {
-    type:'doughnut',
-    data:{ labels:['Bueno/Excelente','Aceptable','Deficiente'], datasets:[{ data:[nivelCount.alto, nivelCount.medio, nivelCount.bajo], backgroundColor:['#1FA060','#E0A012','#D6483A'] }] },
-    options:{ responsive:true }
-  });
-
-  const rows = data.slice().sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||''));
-  document.getElementById('consol-table-body').innerHTML = rows.map(r=>{
-    const lvl = levelFor(r.promedioGeneral||0);
-    return `
-    <tr>
-      <td>${escapeHtml(r.docente||'—')}</td>
-      <td>${escapeHtml(r.nombreRed||'—')}</td>
-      <td>${escapeHtml(r.evaluador||'—')}</td>
-      <td>${escapeHtml(r.grado||'—')}</td>
-      <td>${escapeHtml(r.fecha||'—')}</td>
-      <td>${(r.promedioGeneral||0).toFixed(2)}</td>
-      <td><span class="lvl-pill ${lvl.cls}">${lvl.label}</span></td>
-    </tr>
-  `;}).join('');
-}
-
-/* ============================================================
    ADMIN · LOGIN
 ============================================================ */
 function openAdminLogin(){
@@ -1068,6 +896,7 @@ function loadAdminData(){
       const val = snap.val() || {};
       _adminAllData = Object.keys(val).map(key=>({key, ...val[key]}));
       populateAdminEvaluadorFilter();
+      populateAdminDocenteFilter();
       applyAdminFilters();
     })
     .catch(err=>{
@@ -1084,10 +913,20 @@ function populateAdminEvaluadorFilter(){
   sel.value = current;
 }
 
+function populateAdminDocenteFilter(){
+  const sel = document.getElementById('admin-filter-docente');
+  const current = sel.value;
+  const docentes = [...new Set(_adminAllData.map(d=>d.docente || 'Sin especificar'))].sort();
+  sel.innerHTML = '<option value="">Todos los docentes</option>' + docentes.map(dc=>`<option value="${escapeHtml(dc)}">${escapeHtml(dc)}</option>`).join('');
+  sel.value = current;
+}
+
 function applyAdminFilters(){
   const evaluador = document.getElementById('admin-filter-evaluador').value;
+  const docente = document.getElementById('admin-filter-docente').value;
   let filtered = _adminAllData.slice();
   if(evaluador) filtered = filtered.filter(d=>(d.evaluador||'Sin especificar')===evaluador);
+  if(docente) filtered = filtered.filter(d=>(d.docente||'Sin especificar')===docente);
   _adminFilteredData = filtered;
   renderAdminDashboard(filtered);
   populateAdminSelect(filtered);
