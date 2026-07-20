@@ -957,27 +957,33 @@ function onEvalSelectionChange(){
   renderAdminDetalle();
 }
 
-function renderDetalleGrid(cats){
+function renderDetalleGrid(labels, levelCounts){
   _adminDetalleCharts.forEach(c=>{ if(c) c.destroy(); });
   _adminDetalleCharts = [];
 
   const grid = document.getElementById('admin-detalle-grid');
-  grid.innerHTML = cats.map((c,i)=>`
+  grid.innerHTML = labels.map((label,i)=>`
     <div class="admin-chart-card">
-      <p style="font-size:12.5px; margin:0 0 10px; color:#333;">${escapeHtml(c.label)}</p>
+      <p style="font-size:12.5px; margin:0 0 10px; color:#333;">${escapeHtml(label)}</p>
       <canvas id="admin-detalle-canvas-${i}" height="140"></canvas>
     </div>
   `).join('');
 
-  cats.forEach((c,i)=>{
+  labels.forEach((label,i)=>{
     const ctx = document.getElementById(`admin-detalle-canvas-${i}`).getContext('2d');
     const chart = new Chart(ctx, {
       type:'bar',
-      data:{ labels:[c.label], datasets:[{ label:'Promedio', data:[c.avg], backgroundColor:'#5B6CD6' }] },
+      data:{
+        labels: SCALE_LABELS.slice(1),
+        datasets:[{
+          data: levelCounts[i],
+          backgroundColor:['#D6483A','#E67E22','#E0A012','#8BC34A','#1FA060']
+        }]
+      },
       options:{
-        responsive:true, indexAxis:'y',
+        responsive:true,
         plugins:{ legend:{display:false} },
-        scales:{ x:{ min:0, max:5, ticks:{stepSize:1} } }
+        scales:{ y:{ beginAtZero:true, ticks:{stepSize:1} }, x:{ ticks:{ font:{size:9} } } }
       }
     });
     _adminDetalleCharts.push(chart);
@@ -986,8 +992,8 @@ function renderDetalleGrid(cats){
 
 function renderAdminDetalle(){
   const d = _adminSelected;
-  const cats = d.categorias || computeCategoryAveragesFromScores(d.scores||{});
-  renderDetalleGrid(cats);
+  const levelCounts = computeCategoryLevelCounts([d]);
+  renderDetalleGrid(CATEGORIES.map(c=>c.label), levelCounts);
 
   const obs = document.getElementById('admin-detalle-observaciones');
   const campo = (label, valor) => `
@@ -1004,18 +1010,8 @@ function renderAdminDetalle(){
 
 function renderAdminDetalleConsolidado(){
   const data = _adminFilteredData;
-  const catSums = CATEGORIES.map(()=>({sum:0,count:0}));
-  data.forEach(d=>{
-    const cats = d.categorias || computeCategoryAveragesFromScores(d.scores||{});
-    cats.forEach((c,i)=>{
-      if(c.avg>0){ catSums[i].sum += c.avg; catSums[i].count += 1; }
-    });
-  });
-  const cats = CATEGORIES.map((cat,i)=>({
-    label: cat.label,
-    avg: catSums[i].count ? catSums[i].sum/catSums[i].count : 0
-  }));
-  renderDetalleGrid(cats);
+  const levelCounts = computeCategoryLevelCounts(data);
+  renderDetalleGrid(CATEGORIES.map(c=>c.label), levelCounts);
 
   const obs = document.getElementById('admin-detalle-observaciones');
   obs.innerHTML = `
@@ -1031,6 +1027,22 @@ function computeCategoryAveragesFromScores(scores){
     const vals = cat.items.map((_,ii)=>scores[`${ci}_${ii}`]).filter(v=>v!=null);
     const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
     return { label:cat.label, avg };
+  });
+}
+
+/* Cuenta, por categoría, cuántas respuestas cayeron en cada nivel (1..5)
+   a través de una lista de evaluaciones (cada una con su objeto scores). */
+function computeCategoryLevelCounts(dataList){
+  return CATEGORIES.map((cat,ci)=>{
+    const counts = [0,0,0,0,0];
+    dataList.forEach(d=>{
+      const scores = (d && d.scores) || {};
+      cat.items.forEach((_,ii)=>{
+        const v = scores[`${ci}_${ii}`];
+        if(v>=1 && v<=5) counts[v-1]++;
+      });
+    });
+    return counts;
   });
 }
 
@@ -1053,16 +1065,9 @@ function renderAdminDashboard(data){
   document.getElementById('admin-kpi-reds').textContent = reds.size;
   document.getElementById('admin-kpi-prom').textContent = promedioGeneral.toFixed(2);
 
-  /* Promedio por categoría a través de todas las evaluaciones filtradas */
-  const catSums = CATEGORIES.map(()=>({sum:0,count:0}));
-  data.forEach(d=>{
-    const cats = d.categorias || computeCategoryAveragesFromScores(d.scores||{});
-    cats.forEach((c,i)=>{
-      if(c.avg>0){ catSums[i].sum += c.avg; catSums[i].count += 1; }
-    });
-  });
+  /* Distribución de respuestas por nivel (1..5), por categoría, a través de todas las evaluaciones filtradas */
   const catLabels = CATEGORIES.map(c=>c.label);
-  const catAverages = catSums.map(s=> s.count ? s.sum/s.count : 0);
+  const catLevelCounts = computeCategoryLevelCounts(data);
 
   const nivelCount = {alto:0, medio:0, bajo:0};
   data.forEach(d=>{
@@ -1070,7 +1075,7 @@ function renderAdminDashboard(data){
     nivelCount[lvl.cls]++;
   });
 
-  renderAdminCharts(catLabels, catAverages, nivelCount);
+  renderAdminCharts(catLabels, catLevelCounts, nivelCount);
 
   const rows = data.slice().sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||''));
   document.getElementById('admin-table-body').innerHTML = rows.map(r=>{
@@ -1091,18 +1096,29 @@ function renderAdminDashboard(data){
   `;}).join('');
 }
 
-function renderAdminCharts(catLabels, catAverages, nivelCount){
+function renderAdminCharts(catLabels, catLevelCounts, nivelCount){
   if(_adminCharts.categorias) _adminCharts.categorias.destroy();
   if(_adminCharts.nivel) _adminCharts.nivel.destroy();
 
+  const levelColors = ['#D6483A','#E67E22','#E0A012','#8BC34A','#1FA060'];
   const ctx1 = document.getElementById('admin-chart-categorias').getContext('2d');
   _adminCharts.categorias = new Chart(ctx1, {
     type:'bar',
-    data:{ labels:catLabels, datasets:[{ label:'Promedio', data:catAverages, backgroundColor:'#5B6CD6' }] },
+    data:{
+      labels: catLabels,
+      datasets: SCALE_LABELS.slice(1).map((label,li)=>({
+        label,
+        data: catLevelCounts.map(counts=>counts[li]),
+        backgroundColor: levelColors[li]
+      }))
+    },
     options:{
       responsive:true,
-      plugins:{ legend:{display:false}, title:{display:true, text:'Promedio por categoría LORI'} },
-      scales:{ y:{ min:0, max:5, ticks:{stepSize:1} }, x:{ ticks:{ autoSkip:false, font:{size:9} } } }
+      plugins:{
+        legend:{display:true, position:'bottom', labels:{boxWidth:12, font:{size:10}}},
+        title:{display:true, text:'Distribución de respuestas por categoría LORI'}
+      },
+      scales:{ y:{ beginAtZero:true, ticks:{stepSize:1} }, x:{ ticks:{ autoSkip:false, font:{size:9} } } }
     }
   });
 
